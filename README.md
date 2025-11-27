@@ -16,7 +16,7 @@ Un humano es considerado **mutante** si se encuentra **más de una secuencia de 
 
 ### 🚀 Funcionalidades Principales
 1.  **Detección de Mutantes:** Algoritmo eficiente para verificar secuencias de ADN.
-2.  **Persistencia:** Guarda los ADNs verificados en una base de datos H2 (en memoria) para evitar recálculos y generar estadísticas.
+2.  **Persistencia Inteligente:** Guarda los ADNs verificados en una base de datos H2 (en memoria) para evitar recálculos y generar estadísticas.
 3.  **Estadísticas:** Endpoint para consultar la cantidad de mutantes, humanos y el ratio.
 4.  **Documentación:** API documentada con Swagger/OpenAPI.
 
@@ -36,26 +36,37 @@ Un humano es considerado **mutante** si se encuentra **más de una secuencia de 
 
 ---
 
-## 🏗 Arquitectura y Diseño
+## 🏗 Arquitectura y Flujo de Ejecución
 
-El proyecto sigue una arquitectura en capas (Layered Architecture) para separar responsabilidades:
+El proyecto sigue una arquitectura en capas (Controller, Service, Repository) para asegurar la separación de responsabilidades y la escalabilidad. A continuación, se detalla cómo se procesan las peticiones internamente.
 
-1.  **Controller Layer:** Maneja las peticiones HTTP (`MutantController`).
-2.  **Service Layer:** Contiene la lógica de negocio (`MutantService`, `StatsService`) y el algoritmo de detección (`MutantDetector`).
-3.  **Repository Layer:** Abstracción de acceso a datos (`DnaRecordRepository`).
-4.  **Model/Entity Layer:** Definición de entidades y DTOs.
+### 1. Análisis de ADN (POST /mutant)
+El proceso de verificación de un mutante sigue los siguientes pasos lógicos:
 
-### Diagramas de Secuencia
+1.  **Recepción y Validación:**
+    El `MutantController` recibe la petición. Antes de procesar nada, se validan los datos de entrada usando anotaciones (`@ValidDnaSequence`). Se asegura que la matriz sea NxN, no sea nula y solo contenga caracteres válidos (A, T, C, G).
 
-**1. Detección de Mutante (POST /mutant)**
-El sistema verifica el formato, genera un hash único para evitar duplicados en BD, verifica si ya existe (caché de BD) y, si es nuevo, ejecuta el algoritmo.
+2.  **Generación de Huella Única (Hashing):**
+    Para optimizar las búsquedas, no se guarda la cadena de ADN completa como índice. En su lugar, el `MutantService` genera un **Hash SHA-256** único a partir del array de ADN. Este hash funciona como una "huella digital" del ADN.
 
-![Diagrama POST](diagrams/POSTMutants.png)
+3.  **Verificación en Caché (Base de Datos):**
+    El sistema consulta la base de datos usando el hash generado.
+    * **Si existe:** Se recupera el resultado previo (Mutante o Humano) y se devuelve inmediatamente, ahorrando tiempo de procesamiento.
+    * **Si no existe:** Se procede al análisis.
 
-**2. Obtención de Estadísticas (GET /stats)**
-Consulta la base de datos para realizar el conteo y cálculo del ratio.
+4.  **Ejecución del Algoritmo (MutantDetector):**
+    Si el ADN es nuevo, el componente `MutantDetector` recorre la matriz buscando secuencias de 4 letras iguales (horizontales, verticales y diagonales).
+    * *Optimización:* El algoritmo se detiene ("short-circuit") tan pronto encuentra más de una secuencia, marcando al sujeto como mutante sin necesidad de recorrer el resto de la matriz.
 
-![Diagrama GET](diagrams/GETStats.png)
+5.  **Persistencia y Respuesta:**
+    Se guarda el nuevo registro en la base de datos (Hash + Resultado) y se devuelve el código HTTP correspondiente (`200 OK` para mutantes, `403 Forbidden` para humanos).
+
+### 2. Reporte de Estadísticas (GET /stats)
+Este endpoint está diseñado para ser rápido y eficiente:
+
+1.  El servicio `StatsService` delega la consulta al repositorio (`DnaRecordRepository`).
+2.  Se ejecutan consultas agregadas (`COUNT`) directamente en la base de datos para obtener el número de mutantes y humanos.
+3.  Se calcula el ratio matemático en tiempo real y se devuelve el objeto JSON con las estadísticas.
 
 ---
 
@@ -64,14 +75,13 @@ Consulta la base de datos para realizar el conteo y cálculo del ratio.
 Para soportar fluctuaciones agresivas de tráfico (100 a 1 millón de peticiones por segundo teóricas), se implementaron las siguientes mejoras:
 
 1.  **Hashing SHA-256:**
-    * En lugar de buscar el array de Strings completo en la base de datos, se genera un Hash único del ADN.
-    * Esto permite búsquedas `O(1)` (por índice) en la base de datos para verificar si un ADN ya fue analizado anteriormente.
+    * Permite búsquedas `O(1)` (por índice) en la base de datos para verificar si un ADN ya fue analizado anteriormente, reduciendo drásticamente la latencia en peticiones repetidas.
 2.  **Indexación en Base de Datos:**
     * Se crearon índices en la columna `dna_hash` y `is_mutant` para acelerar las consultas de búsqueda y conteo estadístico.
 3.  **Algoritmo "Short-Circuit":**
-    * El `MutantDetector` detiene la ejecución tan pronto encuentra más de una secuencia, evitando recorrer toda la matriz innecesariamente si ya se confirmó la condición de mutante.
+    * Evita recorrer toda la matriz innecesariamente. Si ya se confirmó la condición de mutante (más de 1 secuencia), el proceso se detiene.
 4.  **Validación Temprana:**
-    * Se utilizan validaciones (`@ValidDnaSequence`) antes de entrar a la lógica de negocio para rechazar inputs inválidos (caracteres extraños, matrices no cuadradas, nulls) rápidamente.
+    * Se rechazan inputs inválidos (caracteres extraños, matrices no cuadradas) antes de entrar a la lógica de negocio, protegiendo los recursos del servidor.
 
 ---
 
