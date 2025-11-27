@@ -1,182 +1,175 @@
-# Mutant Detector – Examen Integrador Desarrollo de Software (Detección de Mutantes)
+# 🧬 Mutant Detector – Examen Integrador Desarrollo de Software
 
-## Descripción del proyecto
+## 📝 Descripción del proyecto
 
-Magneto quiere reclutar la mayor cantidad de mutantes para poder luchar contra los X-Men. Este proyecto es una API REST que permite detectar si un humano es un mutante basándose en su secuencia de ADN.  
+Magneto quiere reclutar la mayor cantidad de mutantes para poder luchar contra los X-Men. Este proyecto es una API REST que permite detectar si un humano es un mutante basándose en su secuencia de ADN.
 
-El programa recibe como parámetro un array de *Strings* que representan cada fila de una matriz cuadrada (NxN) con la secuencia de ADN. Las letras de los Strings solo pueden ser: `A`, `T`, `C`, `G`, que representan cada base nitrogenada. La regla de negocio define que un humano es considerado mutante si se encuentra **más de una secuencia de cuatro letras iguales**, de forma **horizontal, vertical o diagonal**.  
+El programa recibe como parámetro un array de Strings que representan cada fila de una matriz cuadrada (NxN) con la secuencia de ADN. Las letras de los Strings solo pueden ser: A, T, C, G, que representan cada base nitrogenada. La regla de negocio define que un humano es considerado mutante si se encuentra más de una secuencia de cuatro letras iguales, de forma horizontal, vertical o diagonal.
 
-Además, el sistema guarda los ADN ya procesados en una base de datos en memoria para evitar recálculos, y provee estadísticas sobre la cantidad de mutantes y humanos analizados.  
+Además, el sistema guarda los ADN ya procesados en una base de datos en memoria para evitar recálculos, y provee estadísticas sobre la cantidad de mutantes y humanos analizados.
 
-## Funcionalidades principales
 
-- Detección de mutantes a partir de una secuencia de ADN.  
-- Persistencia inteligente: evita re-analizar ADN previamente verificados gracias a hashing + base en memoria.  
-- Endpoint de estadísticas: permite consultar el total de mutantes, humanos y el ratio entre ambos.  
-- Documentación automática de la API mediante Swagger/OpenAPI.  
+## 🚀 Funcionalidades principales
 
----
+-Detección de mutantes: Algoritmo optimizado para verificar secuencias de ADN.
 
-## Tecnologías utilizadas
+-Persistencia inteligente: Evita re-analizar ADN previamente verificados gracias a hashing + base de datos en memoria.
 
-- **Lenguaje**: Java 21 :contentReference[oaicite:0]{index=0}  
-- **Framework**: Spring Boot 3.2.0 :contentReference[oaicite:1]{index=1}  
-- **Base de datos**: H2 (in-memory) para portabilidad y simplicidad. :contentReference[oaicite:2]{index=2}  
-- **ORM / Persistencia**: Spring Data JPA / Hibernate :contentReference[oaicite:3]{index=3}  
-- **Herramienta de construcción / build**: Gradle :contentReference[oaicite:4]{index=4}  
-- **Testing**: JUnit 5, Mockito, MockMvc :contentReference[oaicite:5]{index=5}  
-- **Cobertura de código**: JaCoCo :contentReference[oaicite:6]{index=6}  
-- **Containerización**: Docker (con Dockerfile incluido) :contentReference[oaicite:7]{index=7}  
-- **Documentación de API**: SpringDoc OpenAPI / Swagger :contentReference[oaicite:8]{index=8}  
+-Estadísticas: Endpoint para consultar el total de mutantes, humanos y el ratio entre ambos.
 
----
+-Documentación: API documentada automáticamente mediante Swagger/OpenAPI.
 
-## Arquitectura y flujo de ejecución
+# 🛠 Tecnologías utilizadas
 
-El proyecto sigue una arquitectura en capas (Controller → Service → Repository) para asegurar separación de responsabilidades, modularidad y escalabilidad. :contentReference[oaicite:9]{index=9}  
+-Lenguaje: Java 21
 
-### Flujo de la petición de detección de mutante (POST /mutant)
+-Framework: Spring Boot 3.2.0
 
-1. **Recepción y validación**: el controlador (por ejemplo `MutantController`) recibe la petición con la secuencia de ADN. Se valida que la matriz sea NxN, no sea nula y que cada cadena contenga sólo los caracteres permitidos (`A`, `T`, `C`, `G`). :contentReference[oaicite:10]{index=10}  
-2. **Generación de huella única (hashing)**: se genera un hash (SHA-256) a partir del array de ADN, para identificar la secuencia de forma única. Este hash sirve como “huella digital” del ADN. :contentReference[oaicite:11]{index=11}  
-3. **Chequeo en caché (base de datos)**: se consulta la base de datos con ese hash:  
-   - Si ya existe: se devuelve el resultado previamente calculado (mutante / humano), evitando re-cálculo.  
-   - Si no existe: se procede al análisis. :contentReference[oaicite:12]{index=12}  
-4. **Ejecución del algoritmo de detección**: si el ADN es nuevo, un componente (`MutantDetector`) recorre la matriz buscando secuencias de 4 letras idénticas — horizontal, vertical y diagonal. Si encuentra más de una secuencia, marca como mutante. El algoritmo está optimizado para detener la búsqueda apenas confirma la condición (“short-circuit”). :contentReference[oaicite:13]{index=13}  
-5. **Persistencia y respuesta**: guarda el registro (hash + resultado) en la base de datos, y responde con el código HTTP correspondiente (`200 OK` si mutante, `403 Forbidden` si humano). :contentReference[oaicite:14]{index=14}  
+-Base de datos: H2 (in-memory) para portabilidad y simplicidad.
 
-### Estadísticas (GET /stats)
+-ORM / Persistencia: Spring Data JPA / Hibernate
 
-Para el endpoint de estadísticas: el servicio consulta el repositorio, cuenta cuántos mutantes y cuántos humanos se han registrado, calcula el ratio y devuelve un objeto JSON con la información. :contentReference[oaicite:15]{index=15}  
+-Build Tool: Gradle
 
----
+-Testing: JUnit 5, Mockito, MockMvc
 
-## API Endpoints
+-Cobertura de código: JaCoCo
 
-La documentación está disponible mediante Swagger UI al ejecutar la aplicación. :contentReference[oaicite:16]{index=16}  
+-Containerización: Docker (con Dockerfile incluido)
 
-- **POST** `/mutant` — Detectar si el ADN corresponde a un mutante.  
-  - Respuestas:  
-    - `200 OK`: es un mutante (cumple la regla) :contentReference[oaicite:17]{index=17}  
-    - `403 Forbidden`: es un humano (no cumple la regla) :contentReference[oaicite:18]{index=18}  
-    - `400 Bad Request`: solicitud inválida (formato incorrecto, matriz no cuadrada, caracteres inválidos, etc.) :contentReference[oaicite:19]{index=19}  
-  - Ejemplo de body JSON:
-    ```json
+-Documentación de API: SpringDoc OpenAPI / Swagger
+
+# 🏗 Arquitectura y flujo de ejecución
+
+El proyecto sigue una arquitectura en capas (Controller → Service → Repository) para asegurar separación de responsabilidades, modularidad y escalabilidad.
+
+### 1. Flujo de detección (POST /mutant)
+
+Recepción y validación: El controlador recibe la petición. Se valida que la matriz sea NxN, no sea nula y contenga solo caracteres permitidos (A, T, C, G).
+
+Hashing (SHA-256): Se genera un hash único del array de ADN. Este hash funciona como "huella digital".
+
+Chequeo en caché: Se consulta la base de datos por el hash.
+
+Si existe: Se devuelve el resultado previo, evitando re-cálculo.
+
+Si no existe: Se procede al análisis.
+
+Ejecución del algoritmo: El MutantDetector recorre la matriz buscando secuencias. Se detiene apenas confirma la condición ("short-circuit").
+
+Persistencia: Guarda el registro (hash + resultado) y responde (200 OK mutante / 403 Forbidden humano).
+
+### 2. Estadísticas (GET /stats)
+
+El servicio consulta el repositorio, cuenta cuántos mutantes y humanos hay registrados, calcula el ratio y devuelve el objeto JSON.
+
+# 🔌 API Endpoints
+
+Documentación interactiva disponible en Swagger UI al ejecutar la aplicación:
+👉 http://localhost:8080/swagger-ui.html
+
+### *Detectar Mutante*
+
+-URL: /mutant
+
+-Método: POST
+
+-Respuestas:
+
+`200 OK: Es un mutante.`
+
+`403 Forbidden: Es un humano.`
+
+`400 Bad Request: Datos inválidos (matriz no cuadrada, caracteres extraños).`
+
+-Ejemplo Body:
+
     {
-      "dna": [
-        "ATGCGA",
-        "CAGTGC",
-        "TTATGT",
-        "AGAAGG",
-        "CCCCTA",
-        "TCACTG"
-      ]
+        "dna": [
+            "ATGCGA",
+            "CAGTGC",
+            "TTATGT",
+            "AGAAGG",
+            "CCCCTA",
+            "TCACTG"
+        ]
     }
-    ```
 
-- **GET** `/stats` — Obtener estadísticas: total de mutantes, total de humanos, ratio. :contentReference[oaicite:20]{index=20}  
 
-> **Documentación adicional**: al levantar la aplicación, podés acceder a la interfaz de documentación generada automáticamente (Swagger UI / OpenAPI) para ver en detalle los esquemas, parámetros y ejemplos. :contentReference[oaicite:21]{index=21}  
+### *Obtener Estadísticas*
 
----
+-URL: /stats
 
-## Instalación y ejecución
+-Método: GET
+
+-Respuesta: Total de mutantes, humanos y ratio.
+
+## ⚙️ Instalación y ejecución
 
 ### Requisitos previos
 
-- Java 21 (o compatible) :contentReference[oaicite:22]{index=22}  
-- Maven/Gradle (aunque se provee wrapper, así que no es obligatorio que lo tengas instalado globalmente) :contentReference[oaicite:23]{index=23}  
-- Docker (opcional, si querés correr en contenedor) :contentReference[oaicite:24]{index=24}  
+-Java 21
 
-### Pasos para levantar localmente
+-Docker (opcional)
 
-1. Clonar el repositorio:  
-   ```bash
-   git clone https://github.com/MateoDLM/examenDSWMutantesMercadoLibre.git
-   cd examenDSWMutantesMercadoLibre
-   
-2. Construir el proyecto con Gradle: 
-   ```bash
-   ./gradlew build
+.Pasos para levantar localmente
 
-2. Ejecutar la aplicación:
-   ```bash
-   ./gradlew bootRun
-
-4. Ejecutar la aplicación:
-   Una vez levantada, la API estará disponible (por defecto) en `http://localhost:8080` (o el puerto configurado).
-
-   Podés acceder a documentación Swagger en `http://localhost:8080/swagger-ui.html`
-
-   La aplicación expone el panel de administración de la base de datos en memoria H2: `http://localhost:8080/h2-console`
-   -Credenciales por defecto (si tu aplicación no las cambió):
-       -JDBC URL: jdbc:h2:mem:testdb
-       -Usuario: sa
-       -Password: (vacío)
-
----
-
-## Testing y Cobertura
-
-El proyecto incluye tests unitarios e integración utilizando:
-
--JUnit 5
--Mockito
--MockMvc
-
-La cobertura de código se genera con:
--JaCoCo
-
-Ejecutar los tests
-
+1. Clonar el repositorio:
     ```bash
-        ./gradlew test
+    git clone https://github.com/MateoDLM/examenDSWMutantesMercadoLibre.git
+    cd examenDSWMutantesMercadoLibre
+    ```
 
-El reporte de cobertura se genera automáticamente y puede consultarse en:
+2. Ejecutar la aplicación 
 
-`/build/reports/jacoco/test/html/index.html`
+(Linux/Mac):
 
----
+    ./gradlew bootRun
 
-## Optimizaciones y Rendimiento
+En Windows:
+
+    gradlew.bat bootRun
+
+La API estará disponible en `http://localhost:8080`
+
+Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+Consola H2: `http://localhost:8080/h2-console` (JDBC URL: jdbc:h2:mem:testdb, User: sa, Password: vacío).
+
+## 🧪 Testing y Cobertura
+
+El proyecto incluye tests unitarios e integración utilizando JUnit 5, Mockito y MockMvc.
+
+Ejecutar los tests:
+    
+    ./gradlew test
+
+Generar reporte de cobertura (JaCoCo):
+
+    ./gradlew jacocoTestReport
+
+
+El reporte HTML estará disponible en: `build/reports/jacoco/test/html/index.html`
+
+## ⚡ Optimizaciones y Rendimiento
 
 Para soportar cargas altas, el proyecto implementa múltiples optimizaciones:
 
-🔐 1. Hashing SHA-256 + persistencia indexada
+🔐 Hashing SHA-256: Evita re-analizar ADN ya procesados, logrando búsquedas O(1) y reduciendo la latencia.
 
-Evita re-analizar ADN ya procesados, logrando búsquedas O(1) y reduciendo la latencia.
+⚡ Índices en BD: Índices en dna_hash e is_mutant para acelerar consultas.
 
-⚡ 2. Índices sobre la base de datos
+🚀 Algoritmo "Short-Circuit": El detector se detiene al confirmar la condición de mutante, evitando recorrer la matriz completa.
 
-Índices en:
+🛡️ Validación temprana: Rechazo inmediato de matrices inválidas o caracteres erróneos.
 
-`dna_hash`
+## 👤 Datos del Autor
 
-`is_mutant`
+Mateo De Luca Montanaro
 
-Aceleran consultas y estadísticas.
+Email: mateodelucamontanaro@gmail.com
 
-🚀 3. Algoritmo “short-circuit”
-
-El detector se detiene al confirmar la condición de mutante, evitando recorrer la matriz completa.
-
-🛡️ 4. Validación temprana
-
-Se rechazan:
-
--Matrices no NxN
--Caracteres inválidos
--Requests mal formados
-
-Esto reduce consumo innecesario de recursos.
-
----
-
-## Datos del Autor 
-
-Autor: Mateo De Luca Montanaro
-Email / Contacto: mateodelucamontanaro@gmail.com
-Repositorio original: https://github.com/MateoDLM/examenDSWMutantesMercadoLibre
+Repositorio: GitHub - examenDSWMutantesMercadoLibre
 
 
 
