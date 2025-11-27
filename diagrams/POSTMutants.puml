@@ -1,0 +1,61 @@
+@startuml
+actor Cliente
+participant MutantController
+participant MutantService
+participant DnaRecordRepository
+participant MutantDetector
+database H2Database
+
+Cliente -> MutantController: POST /mutant\n{dna: [...]}
+activate MutantController
+
+MutantController -> MutantController: @Validated DnaRequest
+note right: Validación de estructura\ny formato de ADN
+
+MutantController -> MutantService: analyzeDna(dna[])
+activate MutantService
+
+MutantService -> MutantService: calculateDnaHash(dna)
+note right: Genera hash SHA-256\ndel ADN
+
+MutantService -> DnaRecordRepository: findByDnaHash(hash)
+activate DnaRecordRepository
+DnaRecordRepository -> H2Database: SELECT * WHERE dna_hash=?
+activate H2Database
+H2Database --> DnaRecordRepository: Optional<DnaRecord>
+deactivate H2Database
+DnaRecordRepository --> MutantService: resultado
+deactivate DnaRecordRepository
+
+alt ADN ya analizado (cache hit)
+    MutantService --> MutantController: isMutant (cached)
+else ADN nuevo (cache miss)
+    MutantService -> MutantDetector: isMutant(dna[])
+    activate MutantDetector
+    MutantDetector -> MutantDetector: Analizar secuencias\n(horizontal, vertical, diagonal)
+    MutantDetector --> MutantService: boolean isMutant
+    deactivate MutantDetector
+
+    MutantService -> MutantService: crear DnaRecord\n(hash, isMutant, timestamp)
+
+    MutantService -> DnaRecordRepository: save(record)
+    activate DnaRecordRepository
+    DnaRecordRepository -> H2Database: INSERT INTO dna_records
+    activate H2Database
+    H2Database --> DnaRecordRepository: registro guardado
+    deactivate H2Database
+    DnaRecordRepository --> MutantService: DnaRecord
+    deactivate DnaRecordRepository
+
+    MutantService --> MutantController: isMutant
+end
+deactivate MutantService
+
+alt Es mutante
+    MutantController --> Cliente: 200 OK
+else No es mutante
+    MutantController --> Cliente: 403 Forbidden
+end
+deactivate MutantController
+
+@enduml

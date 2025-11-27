@@ -1,0 +1,42 @@
+@startuml
+actor Cliente
+participant MutantController
+participant StatsService
+participant DnaRecordRepository
+database H2Database
+
+Cliente -> MutantController: GET /stats
+activate MutantController
+
+MutantController -> StatsService: getStats()
+activate StatsService
+
+StatsService -> DnaRecordRepository: countByIsMutant(true)
+activate DnaRecordRepository
+DnaRecordRepository -> H2Database: SELECT COUNT(*)\nWHERE is_mutant=true
+activate H2Database
+H2Database --> DnaRecordRepository: countMutants
+deactivate H2Database
+DnaRecordRepository --> StatsService: long mutantCount
+deactivate DnaRecordRepository
+
+StatsService -> DnaRecordRepository: countByIsMutant(false)
+activate DnaRecordRepository
+DnaRecordRepository -> H2Database: SELECT COUNT(*)\nWHERE is_mutant=false
+activate H2Database
+H2Database --> DnaRecordRepository: countHumans
+deactivate H2Database
+DnaRecordRepository --> StatsService: long humanCount
+deactivate DnaRecordRepository
+
+StatsService -> StatsService: calcular ratio\n(mutants / humans)
+
+StatsService -> StatsService: crear StatsResponse\n(count_mutant_dna,\ncount_human_dna, ratio)
+
+StatsService --> MutantController: StatsResponse
+deactivate StatsService
+
+MutantController --> Cliente: 200 OK\n{count_mutant_dna,\ncount_human_dna, ratio}
+deactivate MutantController
+
+@enduml
