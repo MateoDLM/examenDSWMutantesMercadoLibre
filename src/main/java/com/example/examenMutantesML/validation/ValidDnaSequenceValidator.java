@@ -3,9 +3,12 @@ package com.example.examenMutantesML.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class ValidDnaSequenceValidator implements ConstraintValidator<ValidDnaSequence, String[]> {
+
+    private static final Set<Character> VALID_CHARS = Set.of('A', 'T', 'C', 'G');
 
     @Override
     public boolean isValid(String[] dna, ConstraintValidatorContext context) {
@@ -24,10 +27,9 @@ public class ValidDnaSequenceValidator implements ConstraintValidator<ValidDnaSe
 
         for (String row : dna) {
             if (row == null || row.length() != n) return false; //No es matriz NxN
-            if (!pattern.matcher(row).matches()) return false;
 
             for (char c : row.toCharArray()) {
-                if (c != 'A' && c != 'T' && c != 'C' && c != 'G') {
+                if (!VALID_CHARS.contains(c)) {
                     return false;
                 }
             }

@@ -24,21 +24,21 @@ class StatsServiceTest {
     @Test
     @DisplayName("Debe calcular estadísticas correctamente")
     void testGetStatsWithData() {
-        //ARRANGE
+        // ARRANGE
         when(dnaRecordRepository.countByIsMutant(true)).thenReturn(40L);
         when(dnaRecordRepository.countByIsMutant(false)).thenReturn(100L);
 
-        //ACT
+        // ACT
         StatsResponse stats = statsService.getStats();
 
-        //ASSERT
+        // ASSERT
         assertEquals(40, stats.getCountMutantDna());
         assertEquals(100, stats.getCountHumanDna());
-        assertEquals(0.4, stats.getRatio(), 0.001); //40/100 = 0.4
+        assertEquals(0.4, stats.getRatio(), 0.001);  // 40/100 = 0.4
     }
 
     @Test
-    @DisplayName("Debe retornar ratio igual a cantidad de mutantes cuando no hay humanos")
+    @DisplayName("Debe retornar ratio 0 cuando no hay humanos")
     void testGetStatsWithNoHumans() {
         when(dnaRecordRepository.countByIsMutant(true)).thenReturn(10L);
         when(dnaRecordRepository.countByIsMutant(false)).thenReturn(0L);
@@ -47,11 +47,11 @@ class StatsServiceTest {
 
         assertEquals(10, stats.getCountMutantDna());
         assertEquals(0, stats.getCountHumanDna());
-        assertEquals(10.0, stats.getRatio(), 0.001);
+        assertEquals(10.0, stats.getRatio(), 0.001);  // Caso especial
     }
 
     @Test
-    @DisplayName("Debe retornar ceros cuando no hay datos")
+    @DisplayName("Debe retornar ratio 0 cuando no hay datos")
     void testGetStatsWithNoData() {
         when(dnaRecordRepository.countByIsMutant(true)).thenReturn(0L);
         when(dnaRecordRepository.countByIsMutant(false)).thenReturn(0L);
@@ -73,7 +73,7 @@ class StatsServiceTest {
 
         assertEquals(1, stats.getCountMutantDna());
         assertEquals(3, stats.getCountHumanDna());
-        assertEquals(0.333, stats.getRatio(), 0.001); //1/3 = 0.333...
+        assertEquals(0.333, stats.getRatio(), 0.001);  // 1/3 = 0.333...
     }
 
     @Test
@@ -86,7 +86,7 @@ class StatsServiceTest {
 
         assertEquals(50, stats.getCountMutantDna());
         assertEquals(50, stats.getCountHumanDna());
-        assertEquals(1.0, stats.getRatio(), 0.001); //50/50 = 1.0
+        assertEquals(1.0, stats.getRatio(), 0.001);  // 50/50 = 1.0
     }
 
     @Test
@@ -99,6 +99,6 @@ class StatsServiceTest {
 
         assertEquals(1000000, stats.getCountMutantDna());
         assertEquals(2000000, stats.getCountHumanDna());
-        assertEquals(0.5, stats.getRatio(), 0.001);  //1M / 2M = 0.5
+        assertEquals(0.5, stats.getRatio(), 0.001);  // 1M / 2M = 0.5
     }
 }

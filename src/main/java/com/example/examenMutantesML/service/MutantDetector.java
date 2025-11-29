@@ -2,13 +2,15 @@ package com.example.examenMutantesML.service;
 
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 @Service
 public class MutantDetector {
     private static final int SEQUENCE_LENGTH = 4;
+    private static final Set<Character> VALID_CHARS = Set.of('A', 'T', 'C', 'G');
+
 
     public boolean isMutant(String[] dna) {
-        //Validación en ValidDnaSequenceValidator
-        //Para Tests:
         if (dna == null || dna.length == 0) {
             return false;
         }
@@ -18,7 +20,16 @@ public class MutantDetector {
 
         char[][] matrix = new char[n][];
         for (int i = 0; i < n; i++) {
-            matrix[i] = dna[i].toCharArray();
+            String row = dna[i];
+            if (row == null || row.length() != n) {
+                return false;
+            }
+            matrix[i] = row.toCharArray();
+            for (char c : matrix[i]) {
+                if (c != 'A' && c != 'T' && c != 'C' && c != 'G') {
+                    return false; // Carácter inválido
+                }
+            }
         }
 
         for (int row = 0; row < n; row++) {
